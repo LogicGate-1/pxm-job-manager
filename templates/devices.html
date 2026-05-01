@@ -1,0 +1,344 @@
+<!-- templates/devices.html -->
+{% extends 'base.html' %}
+
+{% block title %}Devices{% endblock %}
+
+{% block content %}
+    <div class="subheader">Device Registry</div>
+    <p class="section-description">Track all connected EXFO/PXM devices, save serials, assign members, edit device names and delete old entries.</p>
+
+    {% if message %}
+        <div class="alert success">{{ message }}</div>
+    {% endif %}
+
+    <section class="panel-section">
+        <div class="panel split-panel">
+            <div>
+                <h3>Connected devices</h3>
+                <p class="subtext">Devices currently connected to your PC. Save serials and assign members right away.</p>
+            </div>
+            <div class="search-box">
+                <form method="get">
+                    <input type="search" name="search" placeholder="Search serial or device name..." value="{{ search_query }}">
+                    <button type="submit">Search</button>
+                    <a href="{{ url_for('devices') }}" class="refresh-button">Refresh</a>
+                    <a href="{{ url_for('pxm_log') }}" class="secondary" style="margin-left: 8px;">View unassign logs</a>
+                </form>
+            </div>
+        </div>
+
+        {% if connected_devices %}
+            <div class="device-grid">
+                {% for device in connected_devices %}
+                    <div class="device-card">
+                        <div class="device-card-title">{{ device.drive }}</div>
+                        <div class="device-chip">Connected</div>
+                        <div class="device-row">
+                            <span class="label">Jobs folder</span>
+                            <code>{{ device.jobs_dir }}</code>
+                        </div>
+                        {% if device.serial %}
+                            <div class="device-row">
+                                <span class="label">Serial</span>
+                                <strong>{{ device.serial }}</strong>
+                            </div>
+                        {% else %}
+                            <div class="device-row warning">Serial not registered yet</div>
+                        {% endif %}
+                        <div class="device-row">
+                            <span class="label">Member</span>
+                            <strong>{{ device.registered_user if device.already_registered else (device.user or 'Unassigned') }}</strong>
+                        </div>
+                        {% if device.last_issued %}
+                            <div class="device-row">
+                                <span class="label">Issued at</span>
+                                <strong>{{ device.last_issued }}</strong>
+                            </div>
+                        {% endif %}
+                        {% if device.last_returned %}
+                            <div class="device-row">
+                                <span class="label">Returned at</span>
+                                <strong>{{ device.last_returned }}</strong>
+                            </div>
+                        {% endif %}
+                        {% if device.already_registered %}
+                            <div class="device-row success">
+                                <span class="label">Status</span>
+                                <strong>This device is already registered</strong>
+                            </div>
+                            <div class="device-row">
+                                <span class="label">Registered as</span>
+                                <strong>{{ device.registered_name }}</strong>
+                            </div>
+                            {% if device.registered_user %}
+                                <div class="device-row">
+                                    <span class="label">Assigned to</span>
+                                    <strong>{{ device.registered_user }}</strong>
+                                </div>
+                                <form method="post" class="device-form" style="margin-top: 12px;">
+                                    <input type="hidden" name="action" value="unassign_device">
+                                    <input type="hidden" name="serial" value="{{ device.serial }}">
+                                    <button type="submit" class="secondary">Unassign device</button>
+                                </form>
+                            {% endif %}
+                            <a href="#device-{{ device.serial }}" class="secondary small-link">Go to registered device</a>
+                            {% if device.history %}
+                                <details class="history-details">
+                                    <summary>Device history</summary>
+                                    <ul>
+                                        {% for event in device.history|reverse %}
+                                            <li>{{ event.time }} — {{ event.summary or (event.event | replace('_', ' ') | capitalize) }}{% if event.user %} ({{ event.user }}){% endif %}{% if event.details %}: {{ event.details|join(', ') if event.details is iterable and not event.details is string else event.details }}{% endif %}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </details>
+                            {% endif %}
+                        {% else %}
+                            <form method="post" class="device-form">
+                                <input type="hidden" name="action" value="register_device">
+                                <input type="hidden" name="drive" value="{{ device.drive }}">
+                                <label>Device name</label>
+                                <input type="text" name="device_name" placeholder="Optional device name">
+                                <label>Serial</label>
+                                <input type="text" name="serial" placeholder="FMA123456" value="{{ device.serial or '' }}" required>
+                                <label>Assign member</label>
+                                <select name="member">
+                                    <option value="">Unassigned</option>
+                                    {% for member in members %}
+                                        <option value="{{ member.name }}" {% if member.name == device.user %}selected{% endif %}>{{ member.name }} ({{ member.role }})</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="primary-button" type="submit">Save device</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state">No connected devices detected. Plug in a device and refresh.</p>
+        {% endif %}
+    </section>
+
+    <section class="panel-section">
+        <div class="panel-header">
+            <div>
+                <h3>Registered devices</h3>
+                <p class="subtext">Search by serial or device name. Edit assigned member or remove obsolete devices.</p>
+            </div>
+            <div class="badge">{{ known_devices|length }} devices</div>
+        </div>
+        <div class="device-summary-grid">
+            <div class="summary-card assigned-card">
+                <div class="summary-count">{{ assigned_devices|length }}</div>
+                <div>Assigned devices</div>
+                {% for device in assigned_devices %}
+                    <div class="summary-item"><a href="#device-{{ device.serial }}">{{ device.serial }}{% if device.name %} — {{ device.name }}{% endif %}</a></div>
+                {% else %}
+                    <div class="summary-item empty">No assigned devices</div>
+                {% endfor %}
+            </div>
+            <div class="summary-card unassigned-card">
+                <div class="summary-count">{{ unassigned_devices|length }}</div>
+                <div>Unassigned devices</div>
+                {% for device in unassigned_devices %}
+                    <div class="summary-item"><a href="#device-{{ device.serial }}">{{ device.serial }}{% if device.name %} — {{ device.name }}{% endif %}</a></div>
+                {% else %}
+                    <div class="summary-item empty">No unassigned devices</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if known_devices %}
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Serial</th>
+                            <th>Details</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for device in known_devices %}
+                            <tr id="device-{{ device.serial }}">
+                                <td><strong>{{ device.serial }}</strong></td>
+                                <td>
+                                    <form method="post" class="inline-form details-form">
+                                        <input type="hidden" name="action" value="edit_device">
+                                        <input type="hidden" name="serial" value="{{ device.serial }}">
+                                        <input type="text" name="device_name" value="{{ device.name or '' }}" placeholder="Device name">
+                                        <select name="member">
+                                            <option value="">Unassigned</option>
+                                            {% for member in members %}
+                                                <option value="{{ member.name }}" {% if member.name == device.user %}selected{% endif %}>{{ member.name }} ({{ member.role }})</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="secondary">Save</button>
+                                    </form>
+                                    <details class="history-details">
+                                        <summary>Device history</summary>
+                                        {% if device.history %}
+                                            <ul>
+                                                {% for event in device.history|reverse %}
+                                                    <li>
+                                                        {{ event.time }} — {{ event.summary or (event.event | replace('_', ' ') | capitalize) }}
+                                                        {% if event.details and event.summary is not defined %}
+                                                            :
+                                                            {% if event.details is mapping %}
+                                                                {% if event.details.jobs is defined %}
+                                                                    Jobs: {{ event.details.jobs | join(', ') }}
+                                                                {% else %}
+                                                                    {{ event.details }}
+                                                                {% endif %}
+                                                            {% elif event.details is iterable and not event.details is string %}
+                                                                {{ event.details | join(', ') }}
+                                                            {% else %}
+                                                                {{ event.details }}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div>No history recorded for this device.</div>
+                                        {% endif %}
+                                    </details>
+                                </td>
+                                <td class="actions-cell">
+                                    {% if device.user %}
+                                    <form method="post" class="inline-form return-form">
+                                        <input type="hidden" name="action" value="unassign_device">
+                                        <input type="hidden" name="serial" value="{{ device.serial }}">
+                                        <button type="submit" class="secondary" onclick="return confirm('Mark {{ device.serial }} as unassigned?');">Unassign</button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="post" class="inline-form delete-form">
+                                        <input type="hidden" name="action" value="delete_device">
+                                        <input type="hidden" name="serial" value="{{ device.serial }}">
+                                        <button type="submit" class="danger" onclick="return confirm('Delete {{ device.serial }}?');">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">No devices have been registered yet.</p>
+        {% endif %}
+    </section>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const connectedDevices = {{ connected_devices | tojson | safe }};
+        const normalizeStatus = status => ({
+            serials: (status.serials || []).filter(Boolean).slice().sort(),
+            drives: (status.drives || []).filter(Boolean).slice().sort()
+        });
+        const currentStatus = JSON.stringify(normalizeStatus({
+            serials: connectedDevices.map(d => d.serial),
+            drives: connectedDevices.map(d => d.drive)
+        }));
+
+        async function pollDeviceStatus() {
+            try {
+                const response = await fetch('/devices/status');
+                if (!response.ok) return;
+                const status = await response.json();
+                const newStatus = normalizeStatus(status);
+                if (JSON.stringify(newStatus) !== currentStatus) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.warn('Device polling failed:', error);
+            }
+        }
+        setInterval(pollDeviceStatus, 6000);
+    </script>
+    <style>
+        .section-description { color: #5b636f; margin: 0 0 24px; max-width: 780px; }
+        .alert { padding: 16px 18px; border-radius: 12px; background: #e6f4ff; border: 1px solid #b7ddff; color: #0f2c5c; margin-bottom: 24px; }
+        .panel-section { margin-bottom: 32px; }
+        .split-panel { display: flex; justify-content: space-between; gap: 18px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
+        .search-box form { display: flex; gap: 10px; }
+        .search-box input[type="search"] { min-width: 260px; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 10px; }
+        .search-box button, .refresh-button { padding: 10px 18px; border: none; background: #111827; color: white; border-radius: 10px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+        .search-box button:hover, .refresh-button:hover { background: #374151; }
+        .refresh-button { margin-left: 10px; background: #2563eb; }
+        .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+        .device-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05); }
+        .device-card-title { display: flex; justify-content: space-between; align-items: center; font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+        .device-chip { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 0.78rem; background: #eff6ff; color: #1d4ed8; margin-bottom: 16px; }
+        .device-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.95rem; color: #374151; }
+        .device-row.warning { color: #b91c1c; }
+        .label { color: #6b7280; font-size: 0.85rem; }
+        .device-form { display: grid; gap: 12px; margin-top: 14px; }
+        .device-form label { font-size: 0.9rem; color: #374151; }
+        .device-form input[type="text"], .device-form select { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 12px; background: #f9fafb; }
+        .device-form select { appearance: none; }
+        .primary-button, .secondary, .danger, .small-link { padding: 11px 16px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+        .primary-button { background: #0f172a; color: white; }
+        .primary-button:hover { background: #111827; }
+        .secondary { background: #f3f4f6; color: #111827; }
+        .secondary:hover { background: #e5e7eb; }
+        .danger { background: #ef4444; color: white; }
+        .danger:hover { background: #dc2626; }
+        .small-link { background: #e2e8f0; color: #0f172a; }
+        .small-link:hover { background: #cbd5e1; }
+        .success { color: #166534; }
+        .device-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .summary-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 18px; min-height: 160px; }
+        .summary-card.assigned-card { border-color: #d1fae5; background: #ecfdf5; }
+        .summary-card.unassigned-card { border-color: #e2e8f0; background: #f8fafc; }
+        .summary-count { font-size: 2rem; font-weight: 700; margin-bottom: 10px; }
+        .summary-item { font-size: 0.95rem; margin-bottom: 6px; color: #334155; }
+        .summary-item.empty { color: #64748b; font-style: italic; }
+        .history-details { margin-top: 14px; }
+        .history-details summary { cursor: pointer; font-weight: 600; color: #0f172a; }
+        .history-details ul { margin: 10px 0 0; padding-left: 18px; color: #334155; }
+        .history-details li { margin-bottom: 8px; }
+        .panel-header { display: flex; justify-content: space-between; gap: 18px; align-items: center; margin-bottom: 16px; }
+        .badge { background: #e0f2fe; color: #0369a1; border-radius: 999px; padding: 8px 14px; font-size: 0.9rem; }
+        .table-container { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; background: white; }
+        .data-table thead th { text-align: left; padding: 16px 14px; font-size: 0.95rem; color: #475569; border-bottom: 1px solid #e2e8f0; }
+        .data-table tbody td { padding: 14px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .inline-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .inline-form input[type="text"], .inline-form select { min-width: 160px; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px; background: #f8fafc; }
+        .actions-cell { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .empty-state { color: #6b7280; font-style: italic; margin-top: 16px; }
+        @media (max-width: 740px) {
+            .split-panel, .panel-header, .inline-form { flex-direction: column; align-items: stretch; }
+            .search-box input[type="search"] { width: 100%; }
+        }
+    </style>
+    <script>
+        const currentStatus = {
+            serials: {{ connected_devices | map(attribute='serial') | list | tojson }},
+            drives: {{ connected_devices | map(attribute='drive') | list | tojson }}
+        };
+
+        function normalizeList(list) {
+            return (list || []).slice().filter(Boolean).sort().join(',');
+        }
+
+        async function pollDeviceStatus() {
+            try {
+                const response = await fetch("{{ url_for('devices_status') }}", { cache: 'no-store' });
+                if (!response.ok) {
+                    return;
+                }
+                const data = await response.json();
+                const newSerials = normalizeList(data.serials);
+                const newDrives = normalizeList(data.drives);
+                if (newSerials !== normalizeList(currentStatus.serials) || newDrives !== normalizeList(currentStatus.drives)) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.debug('Device poll failed', error);
+            }
+        }
+
+        setInterval(pollDeviceStatus, 5000);
+    </script>
+{% endblock %}

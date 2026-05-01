@@ -1,0 +1,22 @@
+[
+    {
+        "name": "Arman",
+        "role": "Manager"
+    },
+    {
+        "name": "Chad",
+        "role": "Manager"
+    },
+    {
+        "name": "Dima",
+        "role": "Viewer"
+    },
+    {
+        "name": "Nikita",
+        "role": "Manager"
+    },
+    {
+        "name": "Vlad",
+        "role": "Admin"
+    }
+]

@@ -1,0 +1,108 @@
+<!-- templates/exfo.html -->
+{% extends 'base.html' %}
+
+{% block title %}EXFO Devices{% endblock %}
+
+{% block content %}
+    <div class="subheader">EXFO Devices</div>
+    <p style="color: #666; margin-bottom: 1rem;">Detect connected EXFO/PXM devices, save serial numbers, and assign users.</p>
+
+    {% if message %}
+        <div style="background: #eef8ff; color: #0b3d91; border: 1px solid #b3d4ff; padding: 14px 16px; border-radius: 8px; margin-bottom: 1rem;">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <section style="margin-bottom: 2rem;">
+        <h3>Connected devices</h3>
+        {% if connected_pxms %}
+            <div class="device-grid">
+                {% for pxm in connected_pxms %}
+                    <div class="device-card">
+                        <div class="device-card-title">Drive {{ pxm.drive }}</div>
+                        <div style="margin-bottom: 0.5rem;">Jobs folder: <code>{{ pxm.jobs_dir }}</code></div>
+                        {% if pxm.serial %}
+                            <div style="margin-bottom: 0.4rem;">Serial: <strong>{{ pxm.serial }}</strong></div>
+                            <div style="margin-bottom: 0.8rem;">User: <strong>{{ pxm.user or 'Unassigned' }}</strong></div>
+                            <form method="post" class="device-form">
+                                <input type="hidden" name="action" value="assign_user">
+                                <input type="hidden" name="serial" value="{{ pxm.serial }}">
+                                <label>Assign user</label>
+                                <input type="text" name="user" placeholder="Vlad / Nikita" value="{{ pxm.user or '' }}">
+                                <button type="submit">Save user</button>
+                            </form>
+                        {% else %}
+                            <div style="margin-bottom: 0.8rem; color: #bb0000;">Serial not saved yet.</div>
+                            <form method="post" class="device-form">
+                                <input type="hidden" name="action" value="save_serial">
+                                <input type="hidden" name="drive" value="{{ pxm.drive }}">
+                                <label>Serial</label>
+                                <input type="text" name="serial" placeholder="FMA251004" required>
+                                <label>Assign user</label>
+                                <input type="text" name="user" placeholder="Vlad / Nikita">
+                                <button type="submit">Save device</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666; font-style: italic;">No connected EXFO devices detected. Plug in a PXM drive and refresh this page.</p>
+        {% endif %}
+    </section>
+
+    <section>
+        <h3>Known devices</h3>
+        {% if known_pxms %}
+            <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem;">
+                {% for pxm in known_pxms %}
+                    <li style="padding: 14px 16px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px;">
+                        <strong>{{ pxm.serial }}</strong> — {{ pxm.drive }}
+                        <div style="color: #555; margin-top: 0.35rem;">User: <strong>{{ pxm.user or 'Unassigned' }}</strong></div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: #666; font-style: italic;">No EXFO devices have been saved yet.</p>
+        {% endif %}
+    </section>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const connectedDevices = {{ connected_pxms | tojson | safe }};
+        const normalizeStatus = status => ({
+            serials: (status.serials || []).filter(Boolean).slice().sort(),
+            drives: (status.drives || []).filter(Boolean).slice().sort()
+        });
+        const currentStatus = JSON.stringify(normalizeStatus({
+            serials: connectedDevices.map(d => d.serial),
+            drives: connectedDevices.map(d => d.drive)
+        }));
+
+        async function pollDeviceStatus() {
+            try {
+                const response = await fetch('/devices/status');
+                if (!response.ok) return;
+                const status = await response.json();
+                const newStatus = normalizeStatus(status);
+                if (JSON.stringify(newStatus) !== currentStatus) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.warn('Device polling failed:', error);
+            }
+        }
+        setInterval(pollDeviceStatus, 6000);
+    </script>
+    <style>
+        .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+        .device-card { background: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 16px; }
+        .device-card-title { font-weight: 700; margin-bottom: 0.7rem; }
+        .device-form { display: grid; gap: 0.6rem; margin-top: 0.8rem; }
+        .device-form input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #c8c8c8; border-radius: 8px; }
+        .device-form button { width: fit-content; padding: 10px 16px; border: none; border-radius: 8px; background: #007bff; color: white; cursor: pointer; }
+        .device-form button:hover { background: #005bb5; }
+        .device-form label { font-size: 0.9rem; font-weight: 600; }
+    </style>
+{% endblock %}

@@ -1,0 +1,52 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CC/EXFO Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="top-bar" style="display: flex; align-items: center; justify-content: flex-start; gap: 40px; padding: 0 20px;">
+        <div class="logo">RAPID Data Center Deployment Powered by HCAP</div>
+        
+        <!-- FORCED LEFT: Menu now next to logo -->
+        <div class="nav-links" style="display: flex; gap: 25px;">
+            <a href="/home" {% if request.path == '/home' %}class="active"{% endif %}>Home</a>
+            <a href="/rack-lookup" {% if request.path == '/rack-lookup' %}class="active"{% endif %}>Rack Lookup</a>
+            <a href="/customer-projects" {% if request.path == '/customer-projects' %}class="active"{% endif %}>Customer Projects</a>
+            <a href="/packing-slips" {% if request.path == '/packing-slips' %}class="active"{% endif %}>Packing Slips</a>
+            <a href="/exfo" {% if request.path == '/exfo' %}class="active"{% endif %}>EXFO</a>
+        </div>
+    </div>
+    
+    <div class="sidebar">
+        <div class="logo-section">
+            <span class="green-x">x</span>
+            <span class="workspace">CC/EXFO Dashboard</span>
+        </div>
+        <div class="main-links">
+            <a href="/home" {% if request.path == '/home' %}class="active"{% endif %}>Home</a>
+            <a href="/devices" {% if request.path == '/devices' %}class="active"{% endif %}>Devices</a>
+            <a href="/jobs" {% if request.path == '/jobs' %}class="active"{% endif %}>Jobs</a>
+            <a href="/assigned" {% if request.path == '/assigned' %}class="active"{% endif %}>Assigned Jobs</a>
+            <a href="/results" {% if request.path == '/results' %}class="active"{% endif %}>Results</a>
+            <a href="/members" {% if request.path == '/members' %}class="active"{% endif %}>Members</a>
+        </div>
+        <div class="bottom-sidebar">
+            <div class="user-section">
+                <span class="icon">&#128100;</span>
+                <a href="#">User</a>
+            </div>
+            <a href="#">Organization Settings</a>
+            <a href="#">Help & Resources</a>
+        </div>
+    </div>
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

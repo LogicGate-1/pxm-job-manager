@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Generate Jobs for {{ full_name }}{% endblock %}
+{% block content %}
+    <div class="subheader">Generate Jobs for {{ full_name }}</div>
+    {% if message %}<p>{{ message }}</p>{% endif %}
+    <form action="{{ url_for('generate_jobs', full_name=full_name) }}" method="post">
+        <button type="submit" class="add-btn">Generate Jobs</button>
+    </form>
+{% endblock %}

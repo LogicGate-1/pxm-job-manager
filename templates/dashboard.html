@@ -1,0 +1,240 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+{% block title %}Jobs{% endblock %}
+
+{% block content %}
+    <!-- Header row: subheader on left, search + buttons on right -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div class="subheader">Jobs</div>
+        
+        <!-- RIGHT SIDE: Search bar above Add Jobs button -->
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+            <input type="text" 
+                   id="job-search" 
+                   placeholder="Search jobs by name..." 
+                   style="width: 280px; padding: 0.65rem 1rem; font-size: 1rem; border: 1px solid #ddd; border-radius: 6px; outline: none;">
+            
+            <div style="display: flex; gap: 12px;">
+                <a href="{{ url_for('create_jobs') }}" class="add-btn">Add Jobs</a>
+                <button id="load-pxm-btn" class="add-btn" style="display: none;">Load to PXM</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connected PXM status -->
+    <div style="margin-bottom: 1rem;">
+        {% if connected_devices %}
+            {% if connected_devices|length == 1 %}
+                {% set current_device = connected_devices[0] %}
+                <div style="padding: 12px 16px; border:1px solid #d1d5db; border-radius:8px; background:#f8fafb; color:#111827;">
+                    Connected PXM: <strong>{{ current_device.serial or current_device.drive }}</strong>
+                    ({{ current_device.drive }}) —
+                    {% if current_device.user %}
+                        assigned to <strong>{{ current_device.user }}</strong>
+                    {% else %}
+                        <strong>unassigned</strong>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div style="padding: 12px 16px; border:1px solid #d1d5db; border-radius:8px; background:#f8fafb; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span style="font-weight:500;">Choose connected PXM:</span>
+                    <select id="drive-select" style="padding:0.5rem; font-size:1rem;">
+                        {% for device in connected_devices %}
+                            <option value="{{ device.drive }}">
+                                {{ device.serial or device.drive }} ({{ device.drive }}){% if device.user %} — {{ device.user }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="padding: 12px 16px; border:1px solid #f5c2c7; border-radius:8px; background:#fde2e4; color:#842029;">
+                No connected PXM detected. Plug in the device and refresh to load jobs.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Clean Data Hall dropdown -->
+    <div style="margin-bottom: 1rem;">
+        <label style="font-weight: 500; margin-right: 0.5rem;">Data Hall:</label>
+        <select id="dh-select" onchange="window.location = this.value" style="padding: 0.5rem; font-size: 1rem;">
+            {% for dh in dh_list %}
+                <option value="{{ url_for('jobs', dh=dh) }}"
+                        {% if dh == selected_dh %}selected{% endif %}>
+                    {{ dh }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% if selected_dh %}
+        <!-- Type tabs -->
+        <div class="tabs type-tabs">
+            {% for t in job_types %}
+                <a href="{{ url_for('jobs', dh=selected_dh, type=t) }}"
+                   class="tab {% if t == selected_type %}active{% endif %}">
+                    {{ t }}
+                </a>
+            {% endfor %}
+        </div>
+        <div class="job-list-container">
+            {% if job_list %}
+                <p style="margin: 0 0 1rem 0; font-weight: 500; font-size: 1.05rem;">
+                    {{ job_list|length }} job{{ 's' if job_list|length != 1 else '' }} found for
+                    <strong>{{ selected_type }}</strong> in <strong>{{ selected_dh }}</strong>
+                </p>
+                
+                <div style="margin-bottom: 0.8rem;">
+                    <input type="checkbox" id="select-all">
+                    <label for="select-all" style="font-weight: 500;">Select All</label>
+                </div>
+                <form id="load-form">
+                    <ul class="job-list" id="job-list">
+                        {% for job in job_list %}
+                        <li class="job-item">
+                            <input type="checkbox"
+                                   class="job-checkbox"
+                                   name="jobs"
+                                   value="{{ selected_dh }}_{{ selected_type }}/{{ job }}">
+                            <span style="font-family: monospace; word-break: break-all; flex: 1;">{{ job }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </form>
+            {% else %}
+                <div style="padding: 2rem; text-align: center; color: #666;">
+                    <p style="margin: 0 0 0.8rem 0; font-size: 1.1rem;">
+                        No {{ selected_type }} jobs found in {{ selected_dh }} yet.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+        <div id="full-type" data-full-type="{{ selected_dh }}_{{ selected_type }}" style="display: none;"></div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    <script>
+        window.addEventListener('load', function() {
+            const loadBtn = document.getElementById('load-pxm-btn');
+            const checkboxes = document.querySelectorAll('.job-checkbox');
+            const selectAll = document.getElementById('select-all');
+            const fullTypeDiv = document.getElementById('full-type');
+            const searchInput = document.getElementById('job-search');
+            const jobItems = document.querySelectorAll('.job-item');
+            const driveSelect = document.getElementById('drive-select');
+            const connectedDevices = {{ connected_devices | tojson | safe }};
+            let defaultDrive = null;
+
+            if (connectedDevices && connectedDevices.length === 1) {
+                defaultDrive = connectedDevices[0].drive;
+            }
+
+            function getSelectedDrive() {
+                if (driveSelect) {
+                    return driveSelect.value;
+                }
+                return defaultDrive;
+            }
+
+            function checkAnySelected() {
+                const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+                const drive = getSelectedDrive();
+                const canLoad = anyChecked && Boolean(drive);
+                loadBtn.style.display = anyChecked ? 'inline-block' : 'none';
+                loadBtn.disabled = !canLoad;
+                loadBtn.style.opacity = canLoad ? '1' : '0.6';
+            }
+
+            checkboxes.forEach(cb => cb.addEventListener('change', checkAnySelected));
+            if (selectAll) {
+                selectAll.addEventListener('change', () => {
+                    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                    checkAnySelected();
+                });
+            }
+            if (driveSelect) {
+                driveSelect.addEventListener('change', checkAnySelected);
+            }
+            checkAnySelected();
+
+            const normalizeStatus = status => ({
+                serials: (status.serials || []).filter(Boolean).slice().sort(),
+                drives: (status.drives || []).filter(Boolean).slice().sort()
+            });
+            const currentStatus = JSON.stringify(normalizeStatus({
+                serials: connectedDevices.map(d => d.serial),
+                drives: connectedDevices.map(d => d.drive)
+            }));
+
+            async function pollDeviceStatus() {
+                try {
+                    const response = await fetch('/devices/status');
+                    if (!response.ok) return;
+                    const status = await response.json();
+                    const newStatus = normalizeStatus(status);
+                    if (JSON.stringify(newStatus) !== currentStatus) {
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    console.warn('Device polling failed:', error);
+                }
+            }
+            setInterval(pollDeviceStatus, 6000);
+
+            // Live search
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const term = this.value.toLowerCase().trim();
+                    jobItems.forEach(item => {
+                        const jobText = item.querySelector('span').textContent.toLowerCase();
+                        item.style.display = (term === '' || jobText.includes(term)) ? '' : 'none';
+                    });
+                });
+            }
+
+            loadBtn.addEventListener('click', function() {
+                const selected = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                if (!selected.length) return;
+
+                const drive = getSelectedDrive();
+                if (!drive || !drive.trim() || !drive.trim().endsWith(':')) {
+                    alert("No connected PXM drive selected. Plug in a device and refresh.");
+                    return;
+                }
+
+                const formData = new FormData();
+                selected.forEach(job => formData.append('selected_jobs', job));
+                formData.append('drive_letter', drive.trim());
+
+                fetch('/load-to-pxm', { method: 'POST', body: formData })
+                .then(r => r.text())
+                .then(msg => {
+                    alert(msg);
+                    window.location.reload();
+                })
+                .catch(err => alert("Error: " + err.message));
+            });
+        });
+    </script>
+
+    <!-- Better visuals (card-style) -->
+    <style>
+        .job-list { list-style: none; padding: 0; margin: 0; }
+        .job-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; background: #f8f9fa; border: 1px solid #e0e0e0;
+            border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .job-item:hover {
+            background: #ffffff; border-color: #00cc66;
+            box-shadow: 0 4px 12px rgba(0,204,102,0.15); transform: translateY(-1px);
+        }
+        .job-checkbox { width: 22px; height: 22px; accent-color: #00cc66; cursor: pointer; }
+        #load-pxm-btn:not(:disabled) { background-color: #00cc66; color: white; }
+    </style>
+{% endblock %}

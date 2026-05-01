@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+
+{% block title %}Assigned Jobs{% endblock %}
+
+{% block content %}
+    <!-- Top header row: title left, Unassign Job button on right -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <div class="subheader">Assigned Jobs</div>
+            {% if selected_device %}
+                <div style="color: #555; margin-top: 0.35rem;">
+                    Device: <strong>{{ selected_device.name or selected_device.serial }}</strong>
+                    ({{ selected_device.drive }})
+                    {% if selected_user %}
+                        — assigned to <strong>{{ selected_user }}</strong>
+                    {% endif %}
+                </div>
+                {% if not selected_device_connected %}
+                    <div style="margin-top: 0.75rem; color: #b91c1c; font-weight: 600;">
+                        The device is disconnected. You cannot unassign until the PXM is reconnected.
+                    </div>
+                {% endif %}
+                {% if recovery_message %}
+                    <div style="margin-top: 0.75rem; color: #1d4ed8; font-weight: 600;">
+                        {{ recovery_message }}
+                    </div>
+                {% endif %}
+            {% elif selected_user %}
+                <div style="color: #555; margin-top: 0.35rem;">This device is assigned to <strong>{{ selected_user }}</strong>.</div>
+            {% endif %}
+        </div>
+        <button id="unassign-btn" class="add-btn" style="background: #ff4444; color: white; display: none;">Unassign Job</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 1.5rem;">
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa;">
+            <div style="font-weight: 700; margin-bottom: 8px;">Selected device</div>
+            {% if selected_device %}
+                <div>Serial: <strong>{{ selected_device.serial }}</strong></div>
+                <div>Drive: <strong>{{ selected_device.drive }}</strong></div>
+                <div>Name: <strong>{{ selected_device.name or 'No name' }}</strong></div>
+                <div>Assigned to: <strong>{{ selected_device.user or 'None' }}</strong></div>
+            {% else %}
+                <div>No device selected yet.</div>
+            {% endif %}
+        </div>
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa;">
+            <div style="font-weight: 700; margin-bottom: 8px;">Device history</div>
+            {% if selected_device_history %}
+                <ul style="margin:0; padding-left:18px; color:#333;">
+                    {% for event in selected_device_history|reverse %}
+                        <li style="margin-bottom:12px; padding:14px 18px; background:#ffffff; border:1px solid #e5e7eb; border-radius:16px; box-shadow:0 1px 6px rgba(15,23,42,0.08);">
+                            {% if event.event == 'jobs_assigned' %}
+                                <strong>Jobs assigned</strong>
+                            {% elif event.event == 'jobs_unassigned' %}
+                                <strong>Jobs unassigned</strong>
+                            {% elif event.summary %}
+                                <strong>{{ event.summary }}</strong>
+                            {% elif event.event == 'issued' %}
+                                <strong>Device issued</strong>
+                            {% elif event.event == 'returned' %}
+                                <strong>Device returned</strong>
+                            {% else %}
+                                <strong>{{ event.event | replace('_', ' ') | capitalize }}</strong>
+                            {% endif %}
+                            {% if event.user %} — <small>{{ event.user }}</small>{% endif %}
+                            <div style="margin-top:6px;"><small>{{ event.time }}</small></div>
+                            {% if event.details %}
+                                {% if event.event in ['jobs_assigned', 'jobs_unassigned'] %}
+                                    {% if event.details is mapping and event.details.jobs is defined %}
+                                        {% set jobs_data = event.details.jobs %}
+                                    {% elif event.details is iterable and not event.details is string %}
+                                        {% set jobs_data = event.details %}
+                                    {% else %}
+                                        {% set jobs_data = [] %}
+                                    {% endif %}
+
+                                    {% if jobs_data is iterable and not jobs_data is string and jobs_data|length > 0 %}
+                                        <div style="margin-top:12px; display:flex; justify-content:flex-start;">
+                                            <button type="button" class="view-jobs-btn" data-jobs='{{ jobs_data | tojson }}' style="background:#111827; color:white; border:none; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600; box-shadow:0 4px 12px rgba(15,23,42,0.16);">
+                                                View {{ 'assigned' if event.event == 'jobs_assigned' else 'unassigned' }} jobs
+                                            </button>
+                                        </div>
+                                    {% elif event.details is mapping %}
+                                        <ul style="margin-top:6px; padding-left:18px; color:#222;">
+                                            {% for key, value in event.details.items() if value is not none and value != '' %}
+                                                <li><strong>{{ key | replace('_', ' ') | capitalize }}:</strong>
+                                                    {% if value is iterable and not value is string %}
+                                                        {{ value | join(', ') }}
+                                                    {% else %}
+                                                        {{ value }}
+                                                    {% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% elif event.details is iterable and not event.details is string %}
+                                        <ul style="margin-top:6px; padding-left:18px; color:#222;">
+                                            {% for item in event.details %}
+                                                <li>{{ item }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <div style="margin-top:6px; padding:8px 12px; background:#f7f7f7; border-radius:8px; color:#222;">{{ event.details }}</div>
+                                    {% endif %}
+                                {% elif event.details is mapping %}
+                                    <div style="margin-top:10px; padding:12px 14px; border-radius:12px; background:#f7f7f7; color:#222;">
+                                        {% for key, value in event.details.items() if value is not none and value != '' %}
+                                            <div style="margin-bottom:4px;"><strong>{{ key | replace('_', ' ') | capitalize }}:</strong>
+                                                {% if value is iterable and not value is string %}
+                                                    {{ value | join(', ') }}
+                                                {% else %}
+                                                    {{ value }}
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% elif event.details is iterable and not event.details is string %}
+                                    <ul style="margin-top:6px; padding-left:18px; color:#222;">
+                                        {% for item in event.details %}
+                                            <li>{{ item }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <div style="margin-top:6px; padding:8px 12px; background:#f7f7f7; border-radius:8px; color:#222;">{{ event.details }}</div>
+                                {% endif %}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div style="color: #666;">No history events recorded for this device.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="jobs-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-backdrop" onclick="closeJobsModal()"></div>
+        <div class="modal-panel">
+            <div class="modal-header">
+                <div style="font-size:1.1rem; font-weight:700;">Assigned jobs</div>
+                <button type="button" class="modal-close" onclick="closeJobsModal()">Close</button>
+            </div>
+            <div class="modal-body">
+                <ul id="modal-job-list" style="margin:0; padding-left:18px; color:#222;"></ul>
+            </div>
+        </div>
+    </div>
+
+    <p style="margin-bottom: 1rem; color: #666;">Jobs currently loaded on each PXM</p>
+
+    <!-- Dynamic PXM dropdown -->
+    <div style="margin-bottom: 1.5rem;">
+        <label style="font-weight: 500; margin-right: 0.5rem;">PXM:</label>
+        <select id="pxm-select" style="padding: 0.5rem; font-size: 1rem;" onchange="window.location = this.value">
+            {% for p in pxm_options %}
+                <option value="{{ url_for('assigned_jobs', pxm=p.serial) }}"
+                        {% if p.serial == selected_pxm %}selected{% endif %}>
+                    {{ p.serial }} ({{ p.drive }}){% if p.name %} — {{ p.name }}{% endif %}{% if p.user %} — {{ p.user }}{% endif %}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div style="margin-bottom: 3rem;">
+        <h3 style="background: #f0f0f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 1rem;">
+            PXM: <strong>{{ pxm_serial }}</strong>
+        </h3>
+        {% if not selected_device_connected and assigned_jobs %}
+            <div style="margin-bottom: 1rem; color: #555; font-style: italic;">
+                Device is disconnected, but these jobs were last known to be loaded on the PXM.
+            </div>
+        {% endif %}
+
+        {% if assigned_jobs %}
+            <form id="unassign-form">
+                <input type="hidden" name="pxm_serial" value="{{ pxm_serial }}">
+                <div style="margin-bottom: 0.8rem;">
+                    <input type="checkbox" id="select-all">
+                    <label for="select-all" style="font-weight: 500;">Select All</label>
+                </div>
+                <ul class="job-list" id="job-list" style="list-style: none; padding: 0;">
+                    {% for job in assigned_jobs %}
+                    <li class="job-item" style="padding: 14px 16px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" class="job-checkbox" name="selected_jobs" value="{{ job }}">
+                        <span style="font-family: monospace; word-break: break-all; flex: 1;">{{ job }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </form>
+
+            <p style="margin-top: 1rem; color: #00cc66; font-weight: 500;">
+                {{ assigned_jobs|length }} job{{ 's' if assigned_jobs|length != 1 else '' }} assigned to this PXM
+            </p>
+        {% else %}
+            <p style="color: #666; font-style: italic;">No jobs assigned yet on this PXM.</p>
+        {% endif %}
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 2rem;">
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+            <div style="font-weight: 700; margin-bottom: 10px;">Assigned devices</div>
+            {% if assigned_devices %}
+                <ul style="margin:0; padding-left:18px;">
+                    {% for device in assigned_devices %}
+                        <li style="margin-bottom:8px;"><strong>{{ device.serial }}</strong>{% if device.name %} — {{ device.name }}{% endif %} — {{ device.user }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div style="color: #666;">No assigned devices found.</div>
+            {% endif %}
+        </div>
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+            <div style="font-weight: 700; margin-bottom: 10px;">Unassigned devices</div>
+            {% if unassigned_devices %}
+                <ul style="margin:0; padding-left:18px;">
+                    {% for device in unassigned_devices %}
+                        <li style="margin-bottom:8px;"><strong>{{ device.serial }}</strong>{% if device.name %} — {{ device.name }}{% endif %}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div style="color: #666;">No unassigned devices found.</div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function openJobsModal(jobs) {
+            const modal = document.getElementById('jobs-modal');
+            const list = document.getElementById('modal-job-list');
+            list.innerHTML = '';
+            jobs.forEach(job => {
+                const item = document.createElement('li');
+                item.textContent = job;
+                item.style.marginBottom = '8px';
+                list.appendChild(item);
+            });
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeJobsModal() {
+            const modal = document.getElementById('jobs-modal');
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        window.addEventListener('load', function() {
+            const checkboxes = document.querySelectorAll('.job-checkbox');
+            const selectAll = document.getElementById('select-all');
+            const unassignBtn = document.getElementById('unassign-btn');
+            const viewButtons = document.querySelectorAll('.view-jobs-btn');
+
+            const selectedDeviceConnected = {{ 'true' if selected_device_connected else 'false' }};
+            const connectedDevices = {{ connected_devices | tojson | safe }};
+            const normalizeStatus = status => ({
+                serials: (status.serials || []).filter(Boolean).slice().sort(),
+                drives: (status.drives || []).filter(Boolean).slice().sort()
+            });
+            const currentStatus = JSON.stringify(normalizeStatus({
+                serials: connectedDevices.map(d => d.serial),
+                drives: connectedDevices.map(d => d.drive)
+            }));
+
+            async function pollDeviceStatus() {
+                try {
+                    const response = await fetch('/devices/status');
+                    if (!response.ok) return;
+                    const status = await response.json();
+                    const newStatus = normalizeStatus(status);
+                    if (JSON.stringify(newStatus) !== currentStatus) {
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    console.warn('Device polling failed:', error);
+                }
+            }
+            setInterval(pollDeviceStatus, 6000);
+
+            function updateButton() {
+                const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+                unassignBtn.style.display = selectedDeviceConnected && anyChecked ? 'inline-block' : 'none';
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateButton);
+            });
+            if (selectAll) {
+                selectAll.addEventListener('change', () => {
+                    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                    updateButton();
+                });
+            }
+            updateButton();
+
+            if (viewButtons) {
+                viewButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        let jobs = JSON.parse(this.getAttribute('data-jobs') || '[]');
+                        if (jobs && !Array.isArray(jobs) && jobs.jobs) {
+                            jobs = jobs.jobs;
+                        }
+                        if (!Array.isArray(jobs)) {
+                            return;
+                        }
+                        openJobsModal(jobs);
+                    });
+                });
+            }
+
+            unassignBtn.addEventListener('click', function() {
+                const selected = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                if (!selected.length) return;
+
+                if (!confirm("Unassign these jobs? They will return to the main Jobs page.")) return;
+
+                const form = document.getElementById('unassign-form');
+                const formData = new FormData(form);
+
+                fetch('/unassign', { method: 'POST', body: formData })
+                .then(r => r.text())
+                .then(msg => {
+                    alert(msg);
+                    window.location.reload();
+                })
+                .catch(err => alert("Error: " + err.message));
+            });
+        });
+    </script>
+    <style>
+        .job-list { list-style: none; padding: 0; margin: 0; }
+        .job-item { transition: all 0.2s ease; }
+        .job-item:hover { background: #ffffff; border-color: #00cc66; }
+        .job-checkbox { width: 22px; height: 22px; accent-color: #00cc66; cursor: pointer; }
+        .modal.hidden { display: none; }
+        .modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .modal-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.55); }
+        .modal-panel { position: relative; background: white; border-radius: 16px; box-shadow: 0 20px 80px rgba(15, 23, 42, 0.22); width: min(90%, 560px); max-height: 80vh; overflow: auto; padding: 20px; z-index: 1; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-close { background: #111827; color: white; border: none; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+        .view-jobs-btn { background: #1f2937; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+    </style>
+{% endblock %}

@@ -1,0 +1,106 @@
+[
+    {
+        "drive": "D:",
+        "serial": "FMA251004",
+        "user": "Chad",
+        "name": null,
+        "history": [
+            {
+                "event": "device_assigned",
+                "time": "2026-05-01 15:03",
+                "user": "Chad",
+                "details": {
+                    "device_name": null
+                },
+                "summary": "Assigned to Chad"
+            },
+            {
+                "event": "jobs_assigned",
+                "time": "2026-05-01 15:04",
+                "user": "Chad",
+                "details": [
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU26 S1-T3-D23",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU29 S1-T3-D24",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU32 S1-T3-D25",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU35 S1-T3-D26",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU38 S1-T3-D27"
+                ],
+                "summary": "Jobs assigned: DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU26 S1-T3-D23, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU29 S1-T3-D24, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU32 S1-T3-D25, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU35 S1-T3-D26, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU38 S1-T3-D27"
+            },
+            {
+                "event": "jobs_unassigned",
+                "time": "2026-05-01 15:05",
+                "user": "Chad",
+                "details": [
+                    "R.T2-T3 DH12 NA19 RU32 S1-T3-D25"
+                ],
+                "summary": "Jobs unassigned: R.T2-T3 DH12 NA19 RU32 S1-T3-D25"
+            },
+            {
+                "event": "jobs_unassigned",
+                "time": "2026-05-01 15:05",
+                "user": "Chad",
+                "details": [
+                    "R.T2-T3 DH12 NA19 RU26 S1-T3-D23",
+                    "R.T2-T3 DH12 NA19 RU29 S1-T3-D24",
+                    "R.T2-T3 DH12 NA19 RU35 S1-T3-D26",
+                    "R.T2-T3 DH12 NA19 RU38 S1-T3-D27"
+                ],
+                "summary": "Jobs unassigned: R.T2-T3 DH12 NA19 RU26 S1-T3-D23, R.T2-T3 DH12 NA19 RU29 S1-T3-D24, R.T2-T3 DH12 NA19 RU35 S1-T3-D26, R.T2-T3 DH12 NA19 RU38 S1-T3-D27"
+            }
+        ],
+        "current_jobs": []
+    },
+    {
+        "drive": "D:",
+        "serial": "FMA254802",
+        "user": "Dima",
+        "name": null,
+        "history": [
+            {
+                "event": "device_assigned",
+                "time": "2026-05-01 15:03",
+                "user": "Dima",
+                "details": {
+                    "device_name": null
+                },
+                "summary": "Assigned to Dima"
+            },
+            {
+                "event": "jobs_assigned",
+                "time": "2026-05-01 15:04",
+                "user": "Dima",
+                "details": [
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU11 S1-T3-D18",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU14 S1-T3-D19",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU17 S1-T3-D20",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU20 S1-T3-D21",
+                    "DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU23 S1-T3-D22"
+                ],
+                "summary": "Jobs assigned: DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU11 S1-T3-D18, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU14 S1-T3-D19, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU17 S1-T3-D20, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU20 S1-T3-D21, DH12_RT2-RT3/R.T2-T3 DH12 NA19 RU23 S1-T3-D22"
+            },
+            {
+                "event": "jobs_unassigned",
+                "time": "2026-05-01 15:04",
+                "user": "Dima",
+                "details": [
+                    "R.T2-T3 DH12 NA19 RU11 S1-T3-D18"
+                ],
+                "summary": "Jobs unassigned: R.T2-T3 DH12 NA19 RU11 S1-T3-D18"
+            },
+            {
+                "event": "jobs_unassigned",
+                "time": "2026-05-01 15:04",
+                "user": "Dima",
+                "details": [
+                    "R.T2-T3 DH12 NA19 RU14 S1-T3-D19",
+                    "R.T2-T3 DH12 NA19 RU17 S1-T3-D20",
+                    "R.T2-T3 DH12 NA19 RU20 S1-T3-D21",
+                    "R.T2-T3 DH12 NA19 RU23 S1-T3-D22"
+                ],
+                "summary": "Jobs unassigned: R.T2-T3 DH12 NA19 RU14 S1-T3-D19, R.T2-T3 DH12 NA19 RU17 S1-T3-D20, R.T2-T3 DH12 NA19 RU20 S1-T3-D21, R.T2-T3 DH12 NA19 RU23 S1-T3-D22"
+            }
+        ],
+        "current_jobs": []
+    }
+]

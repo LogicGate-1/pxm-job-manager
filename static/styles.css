@@ -1,0 +1,267 @@
+/* static/styles.css */
+
+/* Reset & Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Layout */
+.top-bar {
+    background: #1a1a1a;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    position: fixed;
+    height: 60px;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.nav-links a {
+    color: #ccc;
+    margin-left: 1.5rem;
+    text-decoration: none;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+    color: #00ff88;
+}
+
+.logout {
+    font-size: 0.9rem;
+}
+
+.logout span {
+    color: #00ff00;
+}
+
+.sidebar {
+    width: 240px;
+    background: #111;
+    color: white;
+    height: 100vh;
+    position: fixed;
+    padding: 1.5rem 0;
+    overflow-y: auto;
+    top: 60px; /* below top-bar height */
+    z-index: 900;
+}
+
+.logo-section {
+    padding: 0 1.5rem 1.5rem;
+    border-bottom: 1px solid #333;
+    margin-bottom: 1.5rem;
+}
+
+.green-x {
+    color: #00cc66;
+    font-weight: bold;
+    font-size: 1.4rem;
+}
+
+.workspace {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.main-links a,
+.bottom-sidebar a {
+    display: block;
+    padding: 0.9rem 1.5rem;
+    color: #ddd;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.main-links a:hover,
+.bottom-sidebar a:hover,
+.main-links a.active {
+    background: #00cc66;
+    color: white;
+}
+
+.bottom-sidebar {
+    position: absolute;
+    bottom: 1.5rem;
+    width: 100%;
+}
+
+.user-section {
+    padding: 0 1.5rem 1rem;
+    border-top: 1px solid #333;
+    margin-top: 1rem;
+}
+
+.user-section a {
+    color: #00ff88;
+}
+
+.main-content {
+    margin-left: 240px;
+    margin-top: 60px; /* space for fixed top-bar */
+    padding: 1.5rem 2rem;
+    min-height: calc(100vh - 60px);
+}
+
+/* Subheader */
+.subheader {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #222;
+}
+
+/* Tabs (DH and job types) */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    background: white;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.tab {
+    padding: 0.6rem 1.2rem;
+    background: #f0f0f0;
+    border-radius: 6px 6px 0 0;
+    text-decoration: none;
+    color: #444;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    background: #e0e0e0;
+}
+
+.tab.active {
+    background: #00cc66;
+    color: white;
+}
+
+/* Sticky tabs */
+.tabs {
+    position: sticky;
+    top: 60px; /* below fixed top-bar */
+    z-index: 10;
+    background: white;
+}
+
+.type-tabs {
+    top: 110px; /* below DH tabs + subheader – adjust if needed */
+}
+
+/* Scrollable job list container */
+.job-list-container {
+    max-height: 65vh;
+    overflow-y: auto;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    margin-top: 1rem;
+}
+
+.job-list-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.job-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.job-list-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.job-list-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Job items */
+.job-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.job-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    margin-bottom: 0.3rem;
+    background: #f9f9f9;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #eee;
+}
+
+.job-item:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.job-checkbox {
+    margin-right: 0.8rem;
+}
+
+/* Top controls, search, etc. (if still used elsewhere) */
+.top-controls {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.add-btn {
+    background: #00cc66;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.add-btn:hover {
+    background: #00b359;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .sidebar { width: 200px; }
+    .main-content { margin-left: 200px; }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        top: 0;
+    }
+    .main-content {
+        margin-left: 0;
+        margin-top: 60px;
+    }
+}

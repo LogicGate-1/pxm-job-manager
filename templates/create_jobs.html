@@ -1,0 +1,81 @@
+<!-- templates/create_jobs.html -->
+{% extends 'base.html' %}
+
+{% block title %}Create Jobs{% endblock %}
+
+{% block content %}
+    <div class="subheader">Create Jobs</div>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+
+    <!-- ONE-CLICK FORM with button disabled until file is chosen -->
+    <form id="create-form" action="/create-jobs" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="file-input" accept=".xlsx, .ods" required>
+        <button type="submit" id="submit-btn" class="add-btn" disabled>Create Jobs</button>
+    </form>
+
+    <!-- LOADING OVERLAY (unchanged from before) -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p class="loading-text">Creating jobs…<br>This may take a minute for large files</p>
+    </div>
+
+    <!-- Inline CSS + JS (button now enables only after file is selected) -->
+    <style>
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+        }
+        .spinner {
+            width: 60px; height: 60px;
+            border: 6px solid #333;
+            border-top: 6px solid #00cc66;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 0;
+        }
+        /* Style disabled button to look grayed out */
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+    </style>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const form = document.getElementById('create-form');
+        const overlay = document.getElementById('loading-overlay');
+
+        // Enable button only when a file is selected
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        });
+
+        // Loading spinner (unchanged)
+        form.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating jobs…';
+            overlay.style.display = 'flex';
+        });
+    </script>
+{% endblock %}

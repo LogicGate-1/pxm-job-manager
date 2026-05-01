@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Results{% endblock %}
+
+{% block content %}
+    <!-- Header row matching screenshot -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div class="subheader">Results</div>
+        
+        <div style="display: flex; gap: 12px;">
+            <button id="upload-pxm-results-btn" class="add-btn">Upload Results from PXM</button>
+            <button id="create-report-btn" class="add-btn" disabled>+ Create report</button>
+            <button class="add-btn">Export</button>
+        </div>
+    </div>
+
+    <!-- Discipline tabs (re-used from Jobs page for consistency) -->
+    <div class="tabs dh-tabs">
+        {% if db_files %}
+            {% for dh in db_files %}
+                <a href="{{ url_for('results', dh=dh) }}"
+                   class="tab {% if dh == selected_dh %}active{% endif %}">
+                    {{ dh }}
+                </a>
+            {% endfor %}
+        {% else %}
+            <p style="color: #666; font-style: italic; padding: 0.5rem;">
+                No disciplines found yet. Import Excel files via Create Jobs.
+            </p>
+        {% endif %}
+    </div>
+
+    {% if selected_dh %}
+        <div class="job-list-container" style="margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="font-weight: 500;">{{ job_list|length }} result{{ 's' if job_list|length != 1 else '' }} found in <strong>{{ selected_dh }}</strong></div>
+                <input type="text" id="filter-input" placeholder="Filter by job names" style="padding: 8px; width: 280px; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+
+            <!-- TABLE EXACTLY MATCHING YOUR SCREENSHOT -->
+            <table class="results-table" style="width:100%; border-collapse: collapse; background: white;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
+                        <th style="width: 40px;"><input type="checkbox" id="select-all"></th>
+                        <th>Name</th>
+                        <th>Workspace</th>
+                        <th>Assignees</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Tests</th>
+                        <th>Fail</th>
+                        <th>Days left</th>
+                        <th>Created on</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                    {% for job in job_list %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td><input type="checkbox" class="result-checkbox" value="{{ job }}"></td>
+                        <td style="font-family: monospace; word-break: break-all;">{{ job }}</td>
+                        <td>ROCE T1- ROCE T2</td>
+                        <td>Private</td>
+                        <td><span style="background:#d4edda; color:#155724; padding:4px 12px; border-radius:9999px; font-size:0.85rem;">Completed</span></td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div style="flex:1; height:8px; background:#e9ecef; border-radius:4px; overflow:hidden;">
+                                    <div style="width:100%; height:100%; background:#007bff;"></div>
+                                </div>
+                                <span style="font-size:0.85rem; font-weight:600;">100%</span>
+                            </div>
+                        </td>
+                        <td>96</td>
+                        <td>No fail</td>
+                        <td>-</td>
+                        <td>2026-03-08</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination footer like screenshot -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:0.9rem; color:#666;">
+                <div>Rows per page: <select><option>50</option></select></div>
+                <div>1 – 50 of {{ job_list|length }}</div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='scripts.js') }}"></script>
+<script>
+    // Simple checkbox logic (0 selected / enable Create report)
+    const checkboxes = document.querySelectorAll('.result-checkbox');
+    const selectAll = document.getElementById('select-all');
+    const createBtn = document.getElementById('create-report-btn');
+
+    function updateSelectedCount() {
+        const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+        createBtn.disabled = checked === 0;
+        // You can add a "X selected" label later if you want
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateSelectedCount));
+    selectAll.addEventListener('change', () => {
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateSelectedCount();
+    });
+
+    // Basic live filter
+    document.getElementById('filter-input').addEventListener('input', function() {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll('#results-body tr').forEach(row => {
+            const name = row.cells[1].textContent.toLowerCase();
+            row.style.display = name.includes(term) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}
